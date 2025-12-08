@@ -1,6 +1,7 @@
 import os
-import re
 import argparse
+import json
+import google.generativeai as genai
 from pypdf import PdfReader
 from docx import Document
 
@@ -9,9 +10,8 @@ def extract_text(filepath):
     try:
         if filepath.lower().endswith('.pdf'):
             reader = PdfReader(filepath)
-            # Use first 5 pages for classification to save time/memory,
-            # usually sufficient for header/structure analysis.
-            for page in reader.pages[:5]:
+            # Use first 10 pages for LLM classification to give it enough context
+            for page in reader.pages[:10]:
                 extracted = page.extract_text()
                 if extracted:
                     text += extracted + "\n"
@@ -21,104 +21,68 @@ def extract_text(filepath):
             for para in doc.paragraphs[:50]:
                 text += para.text + "\n"
         elif filepath.lower().endswith('.doc'):
-             # Cannot easily read .doc without antiword or catdoc.
-             # Assuming 'form' in name -> Respond, else Flex?
-             # For this script we return empty and let filename heuristics handle it.
              pass
     except Exception as e:
         # print(f"Error reading {filepath}: {e}")
         pass
     return text
 
-def classify_file(filepath):
-    filename = os.path.basename(filepath).lower()
-    text = extract_text(filepath).lower()
+def classify_file_llm(filepath):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return json.dumps({"error": "GEMINI_API_KEY environment variable not set"})
 
-    # --- Heuristic Rules ---
+    text = extract_text(filepath)
+    if not text:
+         return json.dumps({"error": f"Could not extract text from {filepath}"})
 
-    # strong_respond_keywords = ["template", "form", "checklist", "fill-in", "fillable", "application form"]
-    # strong_flex_keywords = ["rfp", "request for proposal", "guidelines", "question list", "questions", "narrative"]
+    filename = os.path.basename(filepath)
 
-    score_respond = 0
-    score_flex = 0
+    # Configure Gemini
+    genai.configure(api_key=api_key)
 
-    # 1. Filename Analysis
-    if "template" in filename: score_respond += 3
-    if "form" in filename:
-         # "Application form" in Respond/Application form for GPE grants.docx -> Should be Respond
-         score_respond += 2
-    if "checklist" in filename: score_respond += 2
-    if "chapter" in filename: score_respond += 2 # Based on Respond/Chapter_3.pdf
-    if "appendix" in filename: score_respond += 2 # Based on Respond/Appendix...
+    # Attempt to use the requested model
+    model_name = "gemini-2.5-pro"
 
-    if "rfp" in filename: score_flex += 3
-    if "question" in filename: score_flex += 3
-    if "guidelines" in filename: score_flex += 2
-    if "narrative" in filename: score_flex += 2
+    model = genai.GenerativeModel(model_name)
 
-    # 2. Content Analysis
+    prompt = f"""
+    Analyze the following text extracted from a grant proposal document.
+    Classify it into one of two types based on these definitions:
 
-    # FLEX Indicators
-    if "character limit" in text: score_flex += 3 # Found in 'QuestionList type 2.pdf'
-    if "request for proposal" in text: score_flex += 2
-    if "project overview" in text and "project name*" in text: score_flex += 3 # Specific form style in Flex
-    if "collaborate feature" in text: score_flex += 2 # Found in QuestionList (1).pdf
-    if "character limit" in text: score_flex += 2
+    1. **Respond (Type 1)**: Structured forms, fill-in-the-blank templates, applications with rigid segmentation (Chapters, Appendices), or documents explicitly labeled as "Application Form" or "Template". These are usually meant for automated data extraction or direct filling.
+    2. **Flex (Type 2)**: Unstructured narratives, Request for Proposals (RFP), guidelines, question lists, or complex forms that require a narrative response rather than simple field filling.
 
-    # RESPOND Indicators
-    if "application form" in text:
-        # Check context. If it's "Grant Application Form" it might be Respond.
-        # But some Flex docs also mention "application form".
-        # Let's check for "fillable" or "template" alongside it.
-        # If 'application form' is in the text but NOT 'character limit' or 'project overview', maybe Respond?
-        score_respond += 1
+    Filename: {filename}
 
-    if "please note that a session will time out" in text: score_respond += 2 # Found in Respond template
-    if "application template" in text: score_respond += 3
-    if "chapter 3:" in text or "chapter 2:" in text: score_respond += 2 # Structure of Respond files seems segmented
+    Text Snippet:
+    {text[:5000]}
 
-    # Specific Correction for Guidelines misclassification
-    if "grant guidelines" in text and "guidelines" not in filename:
-        # Sometimes guidelines are in Respond if they are part of a template pack?
-        # But usually 'Guidelines' -> Flex.
-        # Let's see: 'Flex/2025-Grant-Application-Rancheria-Fund-Grant-Cycle.pdf' has "GRANT GUIDELINES" in text.
-        # It was classified as Respond. Why?
-        # Filename '2025-Grant-Application...' -> contains 'Application' (no specific rule), 'Grant'.
-        # Text has 'Grant Cycle Guidelines'.
-        # Let's boost Flex if "Guidelines" in text significantly.
-        score_flex += 1
+    Return a valid JSON object with exactly two keys:
+    - "classification": "Flex (Type 2)" or "Respond (Type 1)"
+    - "reasoning": A brief explanation of why this classification was chosen.
+    """
 
-    # Length/Structure Heuristics (Weak)
-    # If text has many "_____" (underscores for filling), it might be a form (Respond)
-    if text.count("___") > 10: score_respond += 1
-
-    # Conflict Resolution
-    if score_flex > score_respond:
-        return "Flex (Type 2)"
-    elif score_respond > score_flex:
-        return "Respond (Type 1)"
-    else:
-        # Fallback based on folder contents observation
-        # Respond seems to have more "standard" looking docs, Flex has more "QuestionList"
-        if "question" in filename or "rfp" in filename:
-            return "Flex (Type 2)"
-
-        # If text length is very long and structure is complex (many bullets?), maybe Flex?
-        # If it's short and structured, Respond.
-
-        return "Respond (Type 1)" # Default to Respond if unsure
+    try:
+        response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+        return response.text
+    except Exception as e:
+        return json.dumps({"error": str(e)})
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Classify Grant Proposals')
+    parser = argparse.ArgumentParser(description='Classify Grant Proposals using Gemini')
     parser.add_argument('files', metavar='F', type=str, nargs='+', help='Files to classify')
     args = parser.parse_args()
 
+    results = {}
     for f in args.files:
         if os.path.exists(f):
-            result = classify_file(f)
-            print(f"{f}: {result}")
+            result_json = classify_file_llm(f)
+            try:
+                results[f] = json.loads(result_json)
+            except:
+                results[f] = {"raw_output": result_json}
         else:
-            # Handle the missing files mentioned by user
-            # Simulate classification based on name only
-            result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+            results[f] = {"error": "File not found"}
+
+    print(json.dumps(results, indent=2))
