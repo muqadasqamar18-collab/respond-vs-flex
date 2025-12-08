@@ -59,6 +59,16 @@ python classify_proposals.py path/to/document1.pdf path/to/document2.docx
 python classify_proposals.py "Flex/QuestionList (1).pdf" "Respond/Application_Template.docx"
 ```
 
+### Streamlit Web App
+
+You can also run the graphical interface:
+
+```bash
+streamlit run app.py
+```
+
+This will open a web browser where you can upload files and view classification results interactively.
+
 ## Output
 
 The tool returns a JSON object where the keys are the file paths and the values are the classification results.
