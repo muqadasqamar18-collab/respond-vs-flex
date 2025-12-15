@@ -28,133 +28,102 @@ def extract_text(filepath):
         pass
     return text, num_pages
 
+def calculate_complexity_score(text, num_pages, filename=""):
+    score = 0
+    # Heuristics
+    if re.search(r'cover page|exe statement', filename, re.IGNORECASE):
+        score += 15
+    if re.search(r'table of contents|list of figures', text, re.IGNORECASE):
+        score += 10
+    if re.search(r'certification|ordinance|executive order|cfr|debarment|assessed valuation|obligation bond|debt security pledge', text, re.IGNORECASE):
+        score += 15
+    # Dimensions
+    # Dimension 1: Structure
+    dim1_score = 0
+    if num_pages > 15: dim1_score += 15
+    if re.search(r'loi|invitation required|separate budget justification|pre-award risk assessment', text, re.IGNORECASE): dim1_score += 10
+    if all(k in text for k in ['background', 'methods', 'budget']): dim1_score += 5
+    score += min(dim1_score, 25)
+    # Dimension 2: Evidence
+    if re.search(r'literature review|references|current scholarship|evidence base|irb approval|ethics review', text, re.IGNORECASE):
+        score += 20
+    # Dimension 3: Volume
+    dim3_score = 0
+    if len(text.split()) > 6000: dim3_score += 10
+    if re.search(r'methodology section|research design|conceptual framework|indirect costs|salary cap|statistical power', text, re.IGNORECASE): dim3_score += 10
+    score += min(dim3_score, 15)
+    # Dimension 4: Specificity
+    dim4_score = 0
+    if re.search(r'rubric', text, re.IGNORECASE): dim4_score += 10
+    if len(re.findall(r'(\b(what|why|how|describe|explain)\b.+(\band|or|if|then|but also)\b.+(\band|or|if|then|but also)\b)', text, re.IGNORECASE)) > 3: dim4_score += 10
+    score += min(dim4_score, 15)
+    # Remaining Dimensions...
+    if re.search(r'year-by-year projections|5-year cash flow|quantifiable metrics|cost per|cost-effectiveness ratio|baseline data', text, re.IGNORECASE): score += 15
+    if re.search(r'study section|peer review|scientific expertise|reviewer qualifications|consensus scoring', text, re.IGNORECASE): score += 15
+    if re.search(r'ffr required|quarterly reporting|rppr|site visits|data safety monitoring|audit requirement|sam\.gov', text, re.IGNORECASE): score += 20
+    if re.search(r'capacity assessment|oca|scoring matrix|track record verification|staff credential check|risk rating', text, re.IGNORECASE): score += 15
+    if re.search(r'theory of change|logic model|logframe|assumptions section|baseline data|comparison group', text, re.IGNORECASE): score += 15
+    if re.search(r'cost-effectiveness|cost per|line-item justification|cost estimation methodology|market benchmarks|indirect rate|nicra', text, re.IGNORECASE): score += 15
+    if re.search(r'sustainability plan|exit strategy|revenue diversification|step-down funding|transition plan', text, re.IGNORECASE): score += 15
+    if re.search(r'grants\.gov|era commons|aor registration|electronic signature|pdf specifications', text, re.IGNORECASE): score += 15
+    if re.search(r'methodology section|research design|baseline data plan|comparison group|statistical analysis|external evaluator', text, re.IGNORECASE): score += 15
+
+    return score
+
+def separate_text_components(text):
+    instruction_text = []
+    question_text = []
+
+    instruction_keywords = ['instruction', 'guidance', 'your response should', 'evaluation criteria', 'preamble', 'note', 'important', 'eligibility', 'submission guidelines']
+    question_keywords = ['what', 'why', 'how', 'describe', 'explain', 'list', 'provide', 'question', 'application form', 'fillable', 'project narrative', 'budget', 'timeline', 'goals', 'objectives']
+
+    for line in text.splitlines():
+        line_lower = line.lower()
+        is_instruction = any(keyword in line_lower for keyword in instruction_keywords)
+        is_question = any(keyword in line_lower for keyword in question_keywords) or line.strip().endswith('?') or '___' in line or '[]' in line
+
+        if is_question and not is_instruction:
+            question_text.append(line)
+        elif is_instruction and not is_question:
+            instruction_text.append(line)
+        elif is_question and is_instruction: # Ambiguous, default to question
+            question_text.append(line)
+        else: # Default to instruction
+            instruction_text.append(line)
+
+    return "\n".join(instruction_text), "\n".join(question_text)
+
 def classify_file(filepath):
     filename = os.path.basename(filepath).lower()
     text, num_pages = extract_text(filepath)
-    text = text.lower()
 
     # --- Hard Switch Rules ---
-    if re.search(r'chapter|appendix', filename, re.IGNORECASE):
-        return "RESPOND"
-    if re.search(r'letter of inquiry|loi', text, re.IGNORECASE) and (num_pages > 3 or re.search(r'methods|literature', text, re.IGNORECASE)):
-        return "RESPOND"
-    if re.search(r'budget justification form', text, re.IGNORECASE):
-        return "RESPOND"
-    if re.search(r'grants\.gov|era commons|study section|quarterly reporting', text, re.IGNORECASE):
-        return "RESPOND"
-    if re.search(r'theory of change required|capacity assessment.*scoring', text, re.IGNORECASE):
-        return "RESPOND"
-    if num_pages <= 3 and re.search(r'email submission', text, re.IGNORECASE) and re.search(r'any format', text, re.IGNORECASE):
-        return "FLEX"
-    if re.search(r'community review', text, re.IGNORECASE):
-        return "FLEX"
-    if re.search(r'annual or final report only', text, re.IGNORECASE):
-        return "FLEX"
+    if re.search(r'chapter|appendix', filename, re.IGNORECASE): return "RESPOND"
+    if re.search(r'letter of inquiry|loi', text, re.IGNORECASE) and (num_pages > 3 or re.search(r'methods|literature', text, re.IGNORECASE)): return "RESPOND"
+    if re.search(r'budget justification form', text, re.IGNORECASE): return "RESPOND"
+    if re.search(r'grants\.gov|era commons|study section|quarterly reporting', text, re.IGNORECASE): return "RESPOND"
+    if re.search(r'theory of change required|capacity assessment.*scoring', text, re.IGNORECASE): return "RESPOND"
+    if num_pages <= 3 and re.search(r'email submission', text, re.IGNORECASE) and re.search(r'any format', text, re.IGNORECASE): return "FLEX"
+    if re.search(r'community review', text, re.IGNORECASE): return "FLEX"
+    if re.search(r'annual or final report only', text, re.IGNORECASE): return "FLEX"
 
-    # --- Scoring Based on Dimensions and Heuristics ---
-    respond_score = 0
+    # --- Iceberg Analysis ---
+    instruction_text, question_text = separate_text_components(text)
 
-    # Heuristics (points reduced to be less dominant)
-    if re.search(r'cover page|exe statement', filename, re.IGNORECASE):
-        respond_score += 15
-    if re.search(r'table of contents|list of figures', text, re.IGNORECASE):
-        respond_score += 10
-    if re.search(r'certification|ordinance|executive order|cfr|debarment|assessed valuation|obligation bond|debt security pledge', text, re.IGNORECASE):
-        respond_score += 15
+    instruction_score = calculate_complexity_score(instruction_text, num_pages, filename)
+    question_score = calculate_complexity_score(question_text, num_pages, filename)
 
-    # Dimension 1: Application Structure & Gating (+25 pts)
-    dim1_score = 0
-    if num_pages > 15:
-        dim1_score += 15
-    if re.search(r'loi|invitation required|separate budget justification|pre-award risk assessment', text, re.IGNORECASE):
-        dim1_score += 10
-    if all(keyword in text for keyword in ['background', 'methods', 'budget']):
-        dim1_score += 5
-    respond_score += min(dim1_score, 25)
+    gap_score = instruction_score - question_score
 
-    # Dimension 2: External Evidence Requirement (+20 pts)
-    dim2_score = 0
-    if re.search(r'literature review|references|current scholarship|evidence base|irb approval|ethics review', text, re.IGNORECASE):
-        dim2_score += 20
-    respond_score += min(dim2_score, 20)
+    final_score = (instruction_score * 0.6) + (question_score * 0.4) # Weighted average
 
-    # Dimension 3: Writing Effort & Volume (+15 pts)
-    dim3_score = 0
-    if len(text.split()) > 6000:
-        dim3_score += 10
-    if re.search(r'methodology section|research design|conceptual framework|indirect costs|salary cap|statistical power', text, re.IGNORECASE):
-        dim3_score += 10
-    respond_score += min(dim3_score, 15)
-
-    # Dimension 4: Question Specificity (+15 pts)
-    dim4_score = 0
-    if re.search(r'rubric', text, re.IGNORECASE):
-        dim4_score += 10
-    compound_questions = 0
-    for line in text.splitlines():
-        if re.search(r'what|why|how|describe|explain', line, re.IGNORECASE):
-            if len(re.findall(r'and|or|if|then|but also', line, re.IGNORECASE)) >= 2:
-                compound_questions += 1
-    if compound_questions > 3:
-        dim4_score += 10
-    respond_score += min(dim4_score, 15)
-
-    # Dimension 5: Demonstrable Outcomes & Metrics (+15 pts)
-    dim5_score = 0
-    if re.search(r'year-by-year projections|5-year cash flow|quantifiable metrics|cost per|cost-effectiveness ratio|baseline data', text, re.IGNORECASE):
-        dim5_score += 15
-    respond_score += min(dim5_score, 15)
-
-    # Dimension 6: Reviewer Expertise (+15 pts)
-    dim6_score = 0
-    if re.search(r'study section|peer review|scientific expertise|reviewer qualifications|consensus scoring', text, re.IGNORECASE):
-        dim6_score += 15
-    respond_score += min(dim6_score, 15)
-
-    # Dimension 7: Post-Award Monitoring (+20 pts)
-    dim7_score = 0
-    if re.search(r'ffr required|quarterly reporting|rppr|site visits|data safety monitoring|audit requirement|sam\.gov', text, re.IGNORECASE):
-        dim7_score += 20
-    respond_score += min(dim7_score, 20)
-
-    # Dimension 8: Organizational Capacity Assessment (+15 pts)
-    dim8_score = 0
-    if re.search(r'capacity assessment|oca|scoring matrix|track record verification|staff credential check|risk rating', text, re.IGNORECASE):
-        dim8_score += 15
-    respond_score += min(dim8_score, 15)
-
-    # Dimension 9: Evidence Framework (+15 pts)
-    dim9_score = 0
-    if re.search(r'theory of change|logic model|logframe|assumptions section|baseline data|comparison group', text, re.IGNORECASE):
-        dim9_score += 15
-    respond_score += min(dim9_score, 15)
-
-    # Dimension 10: Budget Justification (+15 pts)
-    dim10_score = 0
-    if re.search(r'cost-effectiveness|cost per|line-item justification|cost estimation methodology|market benchmarks|indirect rate|nicra', text, re.IGNORECASE):
-        dim10_score += 15
-    respond_score += min(dim10_score, 15)
-
-    # Dimension 11: Sustainability & Exit Strategy (+15 pts)
-    dim11_score = 0
-    if re.search(r'sustainability plan|exit strategy|revenue diversification|step-down funding|transition plan', text, re.IGNORECASE):
-        dim11_score += 15
-    respond_score += min(dim11_score, 15)
-
-    # Dimension 12: Submission Infrastructure (+15 pts)
-    dim12_score = 0
-    if re.search(r'grants\.gov|era commons|aor registration|electronic signature|pdf specifications', text, re.IGNORECASE):
-        dim12_score += 15
-    respond_score += min(dim12_score, 15)
-
-    # Dimension 13: Program Design & Evaluation (+15 pts)
-    dim13_score = 0
-    if re.search(r'methodology section|research design|baseline data plan|comparison group|statistical analysis|external evaluator', text, re.IGNORECASE):
-        dim13_score += 15
-    respond_score += min(dim13_score, 15)
+    if 15 <= gap_score <= 30:
+        final_score += 10
+    elif gap_score > 30:
+        final_score += 20
 
     # --- Final Classification ---
-    if respond_score >= 60:
+    if final_score >= 60:
         return "RESPOND"
     else:
         return "FLEX"

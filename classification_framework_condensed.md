@@ -9,6 +9,21 @@
   - **RESPOND Score ≥ 60 points** → Route to RESPOND AI
   - **RESPOND Score < 60 points** → Route to FLEX AI
 
+### Critical Addition: The "Iceberg Grant" Problem
+Some documents appear FLEX at the question level but contain RESPOND-level requirements in the surrounding instructions. To account for this, the analysis must separate the document into two components:
+
+| Component | What to Extract |
+|---|---|
+| **Questions/Form Fields** | The literal prompts, character limits, and form fields. |
+| **Instructions/Guidance** | "Your response should include...", evaluation criteria, required sub-components, preambles, and guidance sections. |
+
+A **Gap Score** is calculated to measure this hidden complexity:
+`Gap Score = Instruction Complexity Score - Question Complexity Score`
+
+- **Gap < 15**: Classification is reliable.
+- **Gap 15-30**: Moderate hidden complexity. The final score should be nudged towards RESPOND.
+- **Gap > 30**: Likely an "Iceberg Grant." The document's true complexity is in the instructions. Strongly consider re-classifying as RESPOND.
+
 ## 2. Philosophy Comparison
 
 | Aspect | RESPOND Philosophy | FLEX Philosophy |
@@ -109,6 +124,7 @@
 ## 5. Hard Switch Rules (Automatic Classification)
 
 ### Automatic RESPOND If:
+- Document filename contains `chapter` or `appendix`.
 - Document requires `LOI` and is complex (>3 pages, mentions `methods` or `literature`).
 - Requires separate `budget justification form`.
 - Mentions `Grants.gov`, `eRA Commons`, `study section`, or `quarterly reporting`.
