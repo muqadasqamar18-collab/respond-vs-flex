@@ -4,6 +4,17 @@ import argparse
 from pypdf import PdfReader
 from docx import Document
 
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def extract_text(filepath):
     text = ""
     try:
@@ -113,12 +124,59 @@ if __name__ == "__main__":
     parser.add_argument('files', metavar='F', type=str, nargs='+', help='Files to classify')
     args = parser.parse_args()
 
-    for f in args.files:
+    total_files = len(args.files)
+    count_flex = 0
+    count_respond = 0
+    count_error = 0
+
+    print(f"\n{Colors.HEADER}🎨 Classifying {total_files} proposals...{Colors.ENDC}\n")
+
+    for i, f in enumerate(args.files, 1):
+        # Progress indicator
+        # print(f"Processing {i}/{total_files}: {f}...", end='\r')
+
+        display_name = f
+        if len(display_name) > 50:
+             display_name = "..." + display_name[-47:]
+
         if os.path.exists(f):
-            result = classify_file(f)
-            print(f"{f}: {result}")
+            try:
+                result = classify_file(f)
+
+                if "Flex" in result:
+                    count_flex += 1
+                    icon = "🟦"
+                    color = Colors.CYAN
+                else:
+                    count_respond += 1
+                    icon = "🟩"
+                    color = Colors.GREEN
+
+                print(f" {icon} {display_name:<50} → {color}{result}{Colors.ENDC}")
+
+            except Exception as e:
+                count_error += 1
+                print(f" ❌ {display_name:<50} → {Colors.FAIL}Error: {e}{Colors.ENDC}")
         else:
             # Handle the missing files mentioned by user
             # Simulate classification based on name only
             result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+            if "Flex" in result:
+                count_flex += 1
+                icon = "🟦"
+                color = Colors.CYAN
+            else:
+                count_respond += 1
+                icon = "🟩"
+                color = Colors.GREEN
+
+            print(f" ⚠️ {display_name:<50} → {color}{result}{Colors.ENDC} (File not found)")
+
+    print("-" * 60)
+    print(f"{Colors.BOLD}Summary:{Colors.ENDC}")
+    print(f"  Total Processed: {total_files}")
+    print(f"  {Colors.CYAN}🟦 Flex (Type 2):    {count_flex}{Colors.ENDC}")
+    print(f"  {Colors.GREEN}🟩 Respond (Type 1): {count_respond}{Colors.ENDC}")
+    if count_error > 0:
+        print(f"  {Colors.FAIL}❌ Errors:           {count_error}{Colors.ENDC}")
+    print("\n")
