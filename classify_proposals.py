@@ -4,6 +4,37 @@ import argparse
 from pypdf import PdfReader
 from docx import Document
 
+class Palette:
+    """UX helper for CLI output coloring and icons."""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+    @classmethod
+    def flex(cls, text):
+        return f"{cls.GREEN}{cls.BOLD}✨ {text}{cls.ENDC}"
+
+    @classmethod
+    def respond(cls, text):
+        return f"{cls.BLUE}{cls.BOLD}📝 {text}{cls.ENDC}"
+
+    @classmethod
+    def file(cls, text):
+        return f"{cls.BOLD}📄 {text}{cls.ENDC}"
+
+    @classmethod
+    def error(cls, text):
+        return f"{cls.FAIL}⚠️  {text}{cls.ENDC}"
+
+    @classmethod
+    def summary(cls, total, flex, respond):
+        print(f"{cls.BOLD}📊 Summary:{cls.ENDC} {total} Files | {cls.GREEN}{flex} Flex{cls.ENDC} | {cls.BLUE}{respond} Respond{cls.ENDC}\n")
+
 def extract_text(filepath):
     text = ""
     try:
@@ -113,12 +144,39 @@ if __name__ == "__main__":
     parser.add_argument('files', metavar='F', type=str, nargs='+', help='Files to classify')
     args = parser.parse_args()
 
+    count_flex = 0
+    count_respond = 0
+
+    print("") # Spacer
+
     for f in args.files:
         if os.path.exists(f):
             result = classify_file(f)
-            print(f"{f}: {result}")
+            formatted_result = result
+            if "Flex" in result:
+                formatted_result = Palette.flex(result)
+                count_flex += 1
+            elif "Respond" in result:
+                formatted_result = Palette.respond(result)
+                count_respond += 1
+
+            print(f" {Palette.file(f)}\n    └─ {formatted_result}")
+
         else:
             # Handle the missing files mentioned by user
             # Simulate classification based on name only
             result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+
+            formatted_result = result
+            if "Flex" in result:
+                formatted_result = Palette.flex(result)
+                count_flex += 1
+            elif "Respond" in result:
+                formatted_result = Palette.respond(result)
+                count_respond += 1
+
+            print(f" {Palette.error(f)} (File not found)\n    └─ {formatted_result}")
+
+        print("") # Spacer
+
+    Palette.summary(len(args.files), count_flex, count_respond)
