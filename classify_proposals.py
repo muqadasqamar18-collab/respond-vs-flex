@@ -1,8 +1,51 @@
 import os
 import re
 import argparse
+import logging
 from pypdf import PdfReader
 from docx import Document
+
+# Suppress pypdf warnings for cleaner UX
+logging.getLogger("pypdf").setLevel(logging.ERROR)
+
+class Palette:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+
+    ICON_FLEX = "🔷"
+    ICON_RESPOND = "🟢"
+    ICON_WARN = "⚠️ "
+
+    @staticmethod
+    def style_classification(result, filename):
+        # Extract base type (Flex/Respond)
+        lower_res = result.lower()
+
+        if "flex" in lower_res:
+            tag = f"{Palette.CYAN}{Palette.BOLD}{Palette.ICON_FLEX} FLEX   {Palette.RESET}"
+            # Show just the subtype details cleanly
+            details = result.replace("Flex", "").replace("(", "").replace(")", "").strip()
+            details_str = f"{Palette.CYAN}{details}{Palette.RESET}"
+        elif "respond" in lower_res:
+            tag = f"{Palette.GREEN}{Palette.BOLD}{Palette.ICON_RESPOND} RESPOND{Palette.RESET}"
+            details = result.replace("Respond", "").replace("(", "").replace(")", "").strip()
+            details_str = f"{Palette.GREEN}{details}{Palette.RESET}"
+        else:
+            tag = f"{Palette.YELLOW}UNKNOWN{Palette.RESET}"
+            details_str = result
+
+        return f"{tag} {Palette.DIM}│{Palette.RESET} {Palette.BOLD}{filename}{Palette.RESET} {Palette.DIM}({details_str}){Palette.RESET}"
+
+    @staticmethod
+    def warn(text):
+        return f"{Palette.RED}{Palette.ICON_WARN}{text}{Palette.RESET}"
 
 def extract_text(filepath):
     text = ""
@@ -116,9 +159,11 @@ if __name__ == "__main__":
     for f in args.files:
         if os.path.exists(f):
             result = classify_file(f)
-            print(f"{f}: {result}")
+            print(Palette.style_classification(result, f))
         else:
             # Handle the missing files mentioned by user
             # Simulate classification based on name only
             result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+            # Use style_classification for consistency, but prepend MISSING warning
+            # Or manual match:
+            print(f"{Palette.warn('MISSING')} {Palette.DIM}│{Palette.RESET} {Palette.BOLD}{f}{Palette.RESET} {Palette.DIM}({result}){Palette.RESET}")
