@@ -4,6 +4,16 @@ import argparse
 from pypdf import PdfReader
 from docx import Document
 
+class Palette:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    CYAN = "\033[36m"
+    MAGENTA = "\033[35m"
+
 def extract_text(filepath):
     text = ""
     try:
@@ -116,9 +126,18 @@ if __name__ == "__main__":
     for f in args.files:
         if os.path.exists(f):
             result = classify_file(f)
-            print(f"{f}: {result}")
+
+            if "Flex" in result:
+                # Flex: Cyan/Blue
+                print(f"{Palette.BOLD}{f}{Palette.RESET}: {Palette.CYAN}🌊 {result}{Palette.RESET}")
+            elif "Respond" in result:
+                # Respond: Green
+                print(f"{Palette.BOLD}{f}{Palette.RESET}: {Palette.GREEN}✅ {result}{Palette.RESET}")
+            else:
+                # Fallback
+                print(f"{Palette.BOLD}{f}{Palette.RESET}: {result}")
         else:
             # Handle the missing files mentioned by user
             # Simulate classification based on name only
             result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+            print(f"{Palette.YELLOW}{f} (File not found, classified by name/default){Palette.RESET}: {result}")
