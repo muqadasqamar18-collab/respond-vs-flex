@@ -108,17 +108,49 @@ def classify_file(filepath):
 
         return "Respond (Type 1)" # Default to Respond if unsure
 
+class Palette:
+    # Basic ANSI colors for UX
+    FLEX = '\033[92m'    # Green
+    RESPOND = '\033[96m' # Cyan
+    WARN = '\033[93m'    # Yellow
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+
+    @staticmethod
+    def flex(text): return f"{Palette.FLEX}{text}{Palette.RESET}"
+
+    @staticmethod
+    def respond(text): return f"{Palette.RESPOND}{text}{Palette.RESET}"
+
+    @staticmethod
+    def warn(text): return f"{Palette.WARN}{text}{Palette.RESET}"
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Classify Grant Proposals')
     parser.add_argument('files', metavar='F', type=str, nargs='+', help='Files to classify')
     args = parser.parse_args()
 
+    stats = {"Flex": 0, "Respond": 0}
+    print(f"{Palette.BOLD}Classifying {len(args.files)} files...{Palette.RESET}\n")
+
     for f in args.files:
-        if os.path.exists(f):
-            result = classify_file(f)
-            print(f"{f}: {result}")
+        # Determine existence and classify
+        exists = os.path.exists(f)
+        note = "" if exists else f" {Palette.DIM}(File not found){Palette.RESET}"
+
+        result = classify_file(f)
+
+        # Colorize result and update stats
+        if "Flex" in result:
+            stats["Flex"] += 1
+            colored_result = Palette.flex(result)
         else:
-            # Handle the missing files mentioned by user
-            # Simulate classification based on name only
-            result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+            stats["Respond"] += 1
+            colored_result = Palette.respond(result)
+
+        print(f"📄 {f}{note} → {colored_result}")
+
+    print(f"\n{Palette.BOLD}Summary:{Palette.RESET}")
+    print(f"  {Palette.flex('Flex')}:    {stats['Flex']}")
+    print(f"  {Palette.respond('Respond')}: {stats['Respond']}")
