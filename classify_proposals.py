@@ -4,6 +4,17 @@ import argparse
 from pypdf import PdfReader
 from docx import Document
 
+class Palette:
+    GREEN = '\033[92m'
+    CYAN = '\033[96m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+
+    @staticmethod
+    def colorize(text, color):
+        return f"{color}{text}{Palette.RESET}"
+
 def extract_text(filepath):
     text = ""
     try:
@@ -113,12 +124,42 @@ if __name__ == "__main__":
     parser.add_argument('files', metavar='F', type=str, nargs='+', help='Files to classify')
     args = parser.parse_args()
 
+    flex_count = 0
+    respond_count = 0
+
+    print(f"\n{Palette.BOLD}Classifying Proposals...{Palette.RESET}\n")
+
     for f in args.files:
         if os.path.exists(f):
             result = classify_file(f)
-            print(f"{f}: {result}")
+
+            color = Palette.GREEN if "Flex" in result else Palette.CYAN
+            formatted_result = Palette.colorize(result, color)
+
+            if "Flex" in result:
+                flex_count += 1
+            elif "Respond" in result:
+                respond_count += 1
+
+            print(f"📄 {f}: {formatted_result}")
         else:
             # Handle the missing files mentioned by user
             # Simulate classification based on name only
             result = classify_file(f)
-            print(f"{f} (File not found, classified by name/default): {result}")
+
+            color = Palette.GREEN if "Flex" in result else Palette.CYAN
+            formatted_result = Palette.colorize(result, color)
+            error_msg = Palette.colorize("(File not found)", Palette.RED)
+
+            # We still count them as they were classified by name
+            if "Flex" in result:
+                flex_count += 1
+            elif "Respond" in result:
+                respond_count += 1
+
+            print(f"❌ {f} {error_msg}: {formatted_result}")
+
+    print(f"\n{Palette.BOLD}Summary:{Palette.RESET}")
+    print(f"  Flex:    {Palette.colorize(str(flex_count), Palette.GREEN)}")
+    print(f"  Respond: {Palette.colorize(str(respond_count), Palette.CYAN)}")
+    print("")
