@@ -22,7 +22,7 @@
         </header>
 
         <!-- Upload Area -->
-        <div id="drop-zone" class="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center transition-all duration-200 cursor-pointer hover:border-blue-400 hover:bg-gray-50 mb-8 shadow-sm">
+        <div id="drop-zone" class="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center transition-all duration-200 cursor-pointer hover:border-blue-400 hover:bg-gray-50 mb-8 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400" tabindex="0" role="button" aria-label="Upload files (Drag and drop or click)">
             <input type="file" id="file-input" multiple class="hidden" accept=".pdf,.docx">
             <div class="flex flex-col items-center pointer-events-none">
                 <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
@@ -110,6 +110,12 @@
 
         dropZone.addEventListener('drop', handleDrop, false);
         dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
         function handleDrop(e) {
@@ -219,13 +225,21 @@
                     iconClass = 'fa-exclamation-circle text-red-500';
                 }
 
+                const aiBadge = item.ai_powered ?
+                    `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800" title="Classified by Gemini AI">
+                        <i class="fas fa-sparkles mr-1"></i> AI
+                    </span>` : '';
+
                 const div = document.createElement('div');
                 div.className = `${bgClass} border rounded-lg p-4 flex items-center justify-between shadow-sm transition-transform hover:scale-[1.01]`;
                 div.innerHTML = `
                     <div class="flex items-center overflow-hidden">
                         <i class="fas ${iconClass} text-xl mr-4 flex-shrink-0"></i>
                         <div class="truncate">
-                            <h4 class="font-semibold ${colorClass} truncate">${item.filename}</h4>
+                            <div class="flex items-center">
+                                <h4 class="font-semibold ${colorClass} truncate">${item.filename}</h4>
+                                ${aiBadge}
+                            </div>
                             <p class="text-sm text-gray-600">${item.classification}</p>
                         </div>
                     </div>

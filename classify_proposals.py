@@ -1,6 +1,7 @@
 import os
 import re
 import argparse
+import google.generativeai as genai
 from pypdf import PdfReader
 from docx import Document
 
@@ -41,9 +42,41 @@ def extract_text(filepath):
         pass
     return text
 
+def classify_with_gemini(text):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        prompt = (
+            "You are an expert grant proposal classifier. "
+            "Classify the following document text as either 'Flex (Type 2)' or 'Respond (Type 1)'. "
+            "If the document contains 'Request for Proposal', 'RFP', 'Questions', 'Guidelines', or 'Narrative', it is likely 'Flex (Type 2)'. "
+            "If the document is a 'Form', 'Template', 'Checklist', or 'Application Form' to be filled out, it is likely 'Respond (Type 1)'. "
+            "Return ONLY the classification string: 'Flex (Type 2)' or 'Respond (Type 1)'."
+            "\n\nDocument Text:\n" + text[:10000] # Limit context window just in case
+        )
+
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        # print(f"Gemini API Error: {e}")
+        return None
+
 def classify_file(filepath):
+    text = extract_text(filepath)
+
+    # Try Gemini first if API key is present
+    gemini_result = classify_with_gemini(text)
+    if gemini_result and ("Flex" in gemini_result or "Respond" in gemini_result):
+        return gemini_result
+
+    # Fallback to Heuristics
     filename = os.path.basename(filepath).lower()
-    text = extract_text(filepath).lower()
+    text = text.lower()
 
     # --- Heuristic Rules ---
 
