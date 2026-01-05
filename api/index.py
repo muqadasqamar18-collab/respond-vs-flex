@@ -38,10 +38,14 @@ def classify():
                 # Determine type for frontend coloring
                 type_category = "flex" if "Flex" in classification else "respond"
 
+                # Check if Gemini was likely used (simple check if API key exists)
+                is_ai = bool(os.environ.get("GEMINI_API_KEY"))
+
                 results.append({
                     "filename": filename,
                     "classification": classification,
-                    "type": type_category
+                    "type": type_category,
+                    "ai_powered": is_ai
                 })
             except Exception as e:
                 results.append({

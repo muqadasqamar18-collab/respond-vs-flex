@@ -2,3 +2,4 @@ pypdf
 python-docx
 Flask
 werkzeug
+google-generativeai
