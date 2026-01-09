@@ -129,7 +129,7 @@
             updatePendingList();
         }
 
-        function updatePendingList() {
+        function updatePendingList(focusIndex = -1) {
             if (selectedFiles.length > 0) {
                 pendingList.classList.remove('hidden');
                 resultsArea.classList.add('hidden'); // Hide results when new files added
@@ -157,11 +157,21 @@
                 `;
                 pendingFilesUl.appendChild(li);
             });
+
+            if (focusIndex === 'drop-zone') {
+                dropZone.focus();
+            } else if (typeof focusIndex === 'number' && focusIndex >= 0) {
+                const buttons = pendingFilesUl.querySelectorAll('button');
+                if (buttons[focusIndex]) {
+                    buttons[focusIndex].focus();
+                }
+            }
         }
 
         window.removeFile = function(index) {
             selectedFiles.splice(index, 1);
-            updatePendingList();
+            const nextFocus = selectedFiles.length === 0 ? 'drop-zone' : Math.min(index, selectedFiles.length - 1);
+            updatePendingList(nextFocus);
         }
 
         classifyBtn.addEventListener('click', async () => {
