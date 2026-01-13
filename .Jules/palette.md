@@ -1,7 +1,9 @@
-## 2024-05-23 - CLI Visual Hierarchy
-**Learning:** Plain text CLI outputs lack visual hierarchy, making it difficult for users to quickly scan results or distinguish between success and failure states.
-**Action:** Implement a simple `Palette` class using ANSI escape codes to color-code key information (e.g., Green for success/Flex, Cyan for info/Respond, Red for errors). This improves scannability without adding external dependencies.
+# Palette's Journal
 
-## 2025-05-27 - Custom Interactive Elements Accessibility
-**Learning:** Standard divs used as interactive elements (like drag-and-drop zones) are invisible to keyboard users and screen readers, creating a major accessibility barrier.
-**Action:** Always add `tabindex="0"`, `role="button"`, `aria-label`, and `keydown` event listeners (for Enter/Space) to any non-button element made interactive. Ensure visible focus states (e.g., `focus:ring`) are present.
+## 2024-05-21 - Initial Accessibility Review
+**Learning:** The application uses native HTML/JS with Tailwind CSS. Accessibility is decent (aria-labels on remove buttons, keyboard support for drag-and-drop), but focus management during dynamic list updates is missing.
+**Action:** When modifying the file list, ensure focus is preserved or logically moved to prevent "loss of context" for screen reader users.
+
+## 2024-05-21 - Focus Management in Dynamic Lists
+**Learning:** When removing an item from a list, focus is lost if the removed element was focused.
+**Action:** Programmatically move focus to the next available item or back to the main container (drop zone) if the list becomes empty.
