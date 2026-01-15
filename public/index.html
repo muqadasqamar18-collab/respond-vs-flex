@@ -12,11 +12,21 @@
             background-color: #eff6ff;
         }
     </style>
+    <script type="module">
+        import { useAuthKit } from "https://esm.sh/@picahq/authkit@1.0.5";
+        window.useAuthKit = useAuthKit;
+    </script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
     <div class="max-w-4xl mx-auto px-4 py-12">
-        <header class="text-center mb-12">
+        <header class="text-center mb-12 relative">
+            <div class="absolute top-0 right-0">
+                <button id="authkit-btn" class="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm border border-gray-200 transition-colors duration-200 flex items-center text-sm">
+                    <i class="fas fa-plug mr-2 text-gray-400"></i>
+                    Connect Integrations
+                </button>
+            </div>
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Proposal Classifier</h1>
             <p class="text-lg text-gray-600">Upload your grant documents to automatically classify them as <span class="text-green-600 font-semibold">Flex</span> or <span class="text-cyan-600 font-semibold">Respond</span>.</p>
         </header>
@@ -79,8 +89,39 @@
         const btnSpinner = document.getElementById('btn-spinner');
         const countFlex = document.getElementById('count-flex');
         const countRespond = document.getElementById('count-respond');
+        const authkitBtn = document.getElementById('authkit-btn');
 
         let selectedFiles = [];
+
+        // AuthKit Integration
+        authkitBtn.addEventListener('click', () => {
+            if (!window.useAuthKit) {
+                alert('AuthKit library not loaded yet.');
+                return;
+            }
+
+            const { open } = window.useAuthKit({
+                token: {
+                    url: "/api/authkit-token",
+                    headers: {
+                        // In a real app, include auth token here
+                    },
+                },
+                onSuccess: (connection) => {
+                    console.log("Successfully connected:", connection);
+                    alert(`Successfully connected to ${connection.integrationName || 'integration'}!`);
+                },
+                onError: (error) => {
+                    console.error("Connection failed:", error);
+                    alert('Connection failed. Please try again.');
+                },
+                onClose: () => {
+                    console.log("AuthKit modal closed");
+                },
+            });
+
+            open();
+        });
 
         // Drag & Drop Handlers
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {

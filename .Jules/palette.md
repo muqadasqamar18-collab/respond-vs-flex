@@ -8,3 +8,6 @@
 ## 2025-05-28 - Dynamic List Focus Management
 **Learning:** When removing items from a dynamic list, the browser defaults focus to the body, disorienting keyboard users.
 **Action:** Calculate the next logical focus target (next item, previous item, or empty state container) *before* the DOM update, and programmatically apply focus immediately after rendering.
+## 2025-05-28 - Mixed Concerns and Persona Scope
+**Learning:** Combining unrelated changes (like a UX fix and a new feature integration) in a single PR violates atomic commit principles and makes review difficult.
+**Action:** Always separate distinct changes into different branches/PRs. If a requested task violates agent persona boundaries (e.g., backend changes for a UX agent), flag it or proceed with caution while clearly documenting the exception.

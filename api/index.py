@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 from werkzeug.utils import secure_filename
+from authkit_token import AuthKitToken
 
 # Add project root to sys.path to import classify_proposals
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -11,9 +12,29 @@ from classify_proposals import classify_file
 # Set the static folder to public
 app = Flask(__name__, static_folder='../public', static_url_path='')
 
+# Initialize AuthKit client
+authkit_client = AuthKitToken(os.environ.get("PICA_SECRET_KEY", "dummy_key"))
+
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/api/authkit-token', methods=['POST'])
+def create_authkit_token():
+    # In a real app, we would get the user ID from the session
+    # For this demo, we use a hardcoded dummy user ID
+    user_id = "user_123_demo"
+
+    try:
+        token = authkit_client.create(
+            identity=user_id,
+            identity_type="user"
+        )
+        return jsonify(token)
+    except Exception as e:
+        # Log the error in production
+        print(f"AuthKit Error: {e}")
+        return jsonify({"error": "Failed to generate token"}), 500
 
 @app.route('/api/classify', methods=['POST'])
 def classify():
