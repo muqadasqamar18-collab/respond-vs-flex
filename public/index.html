@@ -129,7 +129,7 @@
             updatePendingList();
         }
 
-        function updatePendingList() {
+        function updatePendingList(focusIndex) {
             if (selectedFiles.length > 0) {
                 pendingList.classList.remove('hidden');
                 resultsArea.classList.add('hidden'); // Hide results when new files added
@@ -148,6 +148,7 @@
                         <span class="ml-2 text-xs text-gray-400">(${(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
                     <button
+                        id="remove-btn-${index}"
                         class="text-red-400 hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 rounded-full p-2 transition-colors"
                         onclick="removeFile(${index})"
                         aria-label="Remove ${file.name}"
@@ -157,11 +158,24 @@
                 `;
                 pendingFilesUl.appendChild(li);
             });
+
+            if (typeof focusIndex === 'number') {
+                const btn = document.getElementById(`remove-btn-${focusIndex}`);
+                if (btn) btn.focus();
+            }
         }
 
         window.removeFile = function(index) {
             selectedFiles.splice(index, 1);
-            updatePendingList();
+
+            if (selectedFiles.length === 0) {
+                updatePendingList();
+                dropZone.focus();
+            } else {
+                // Focus the item that took this spot, or the last item if we removed the last one
+                const newFocusIndex = index < selectedFiles.length ? index : index - 1;
+                updatePendingList(newFocusIndex);
+            }
         }
 
         classifyBtn.addEventListener('click', async () => {
