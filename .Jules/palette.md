@@ -5,3 +5,7 @@
 ## 2025-05-27 - Custom Interactive Elements Accessibility
 **Learning:** Standard divs used as interactive elements (like drag-and-drop zones) are invisible to keyboard users and screen readers, creating a major accessibility barrier.
 **Action:** Always add `tabindex="0"`, `role="button"`, `aria-label`, and `keydown` event listeners (for Enter/Space) to any non-button element made interactive. Ensure visible focus states (e.g., `focus:ring`) are present.
+
+## 2025-05-27 - Dynamic List Focus Management
+**Learning:** Deleting items from a dynamic list destroys the focused element, resetting focus to the body and disrupting keyboard navigation flow.
+**Action:** When removing items, explicitly calculate the next logical focus target (next item, previous item, or parent container) and programmatically set focus after the DOM update. Assign unique IDs to dynamic items to facilitate this.
