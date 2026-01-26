@@ -9,3 +9,7 @@
 ## 2025-02-18 - Focus Management in Dynamic Lists
 **Learning:** When items are removed from a list and the DOM is rebuilt, keyboard focus is lost to the `body`, forcing users to re-navigate the entire page.
 **Action:** Implement programmatic focus restoration after list updates. Calculate the next logical focus target (e.g., same index or previous item) before deletion and explicitly focus it after the DOM updates.
+
+## 2025-05-28 - Non-Blocking Feedback (Toasts)
+**Learning:** Native `alert()` interrupts the user workflow and offers no styling control, degrading the experience.
+**Action:** Replaced `alert()` with a lightweight `showToast(msg, type)` system using existing Tailwind classes. This provides non-blocking, accessible feedback (`role="alert"`/`status`) for both success and error states without new dependencies.
