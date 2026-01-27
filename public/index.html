@@ -67,6 +67,9 @@
 
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -199,8 +202,11 @@
                     body: formData
                 });
 
+                if (!response.ok) throw new Error('Network response was not ok');
+
                 const data = await response.json();
                 displayResults(data.results);
+                showToast('Classification complete!', 'success');
 
                 // Clear selection
                 selectedFiles = [];
@@ -208,7 +214,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
@@ -217,6 +223,39 @@
                 classifyBtn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
         });
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            const bgClass = isError ? 'bg-red-600' : 'bg-green-600';
+            const iconClass = isError ? 'fa-exclamation-circle' : 'fa-check-circle';
+            const role = isError ? 'alert' : 'status';
+
+            toast.setAttribute('role', role);
+            toast.className = `${bgClass} text-white px-6 py-3 rounded-lg shadow-xl transform transition-all duration-300 translate-y-10 opacity-0 flex items-center pointer-events-auto`;
+            toast.innerHTML = `
+                <i class="fas ${iconClass} mr-3"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+
+            // Remove after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
 
         function displayResults(results) {
             resultsArea.classList.remove('hidden');
