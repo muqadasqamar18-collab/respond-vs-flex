@@ -11,9 +11,19 @@
             border-color: #3b82f6;
             background-color: #eff6ff;
         }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 flex flex-col gap-3 z-50 pointer-events-none"></div>
 
     <div class="max-w-4xl mx-auto px-4 py-12">
         <header class="text-center mb-12">
@@ -179,6 +189,48 @@
             updatePendingList(nextFocusIndex);
         }
 
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Icon and colors based on type
+            let bgClass, iconClass;
+            if (type === 'error') {
+                bgClass = 'bg-red-600';
+                iconClass = 'fa-exclamation-circle';
+            } else {
+                bgClass = 'bg-green-600';
+                iconClass = 'fa-check-circle';
+            }
+
+            toast.className = `${bgClass} text-white px-6 py-4 rounded-lg shadow-lg flex items-center toast-enter transition-all duration-300 transform opacity-100 translate-x-0 pointer-events-auto`;
+            // Accessibility attributes
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+            // Use textContent for message to prevent XSS
+            const icon = document.createElement('i');
+            icon.className = `fas ${iconClass} mr-3 text-xl`;
+
+            const msgSpan = document.createElement('span');
+            msgSpan.className = 'font-medium';
+            msgSpan.textContent = message;
+
+            toast.appendChild(icon);
+            toast.appendChild(msgSpan);
+
+            container.appendChild(toast);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 5000);
+        }
+
         classifyBtn.addEventListener('click', async () => {
             if (selectedFiles.length === 0) return;
 
@@ -199,6 +251,10 @@
                     body: formData
                 });
 
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
                 const data = await response.json();
                 displayResults(data.results);
 
@@ -208,7 +264,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification. Please try again.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
