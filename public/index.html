@@ -67,6 +67,9 @@
 
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -201,6 +204,7 @@
 
                 const data = await response.json();
                 displayResults(data.results);
+                showToast('Classification complete!', 'success');
 
                 // Clear selection
                 selectedFiles = [];
@@ -208,7 +212,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
@@ -275,6 +279,45 @@
 
             // Scroll to results
             resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const colors = {
+                error: 'bg-red-600 text-white',
+                success: 'bg-green-600 text-white',
+                info: 'bg-blue-600 text-white'
+            };
+
+            const iconClass = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+
+            toast.className = `${colors[type]} px-6 py-4 rounded-lg shadow-lg flex items-center transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+            const icon = document.createElement('i');
+            icon.className = `fas ${iconClass} mr-3`;
+            toast.appendChild(icon);
+
+            const msgSpan = document.createElement('span');
+            msgSpan.className = 'font-medium';
+            msgSpan.textContent = message;
+            toast.appendChild(msgSpan);
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Remove after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
         }
 
     </script>
