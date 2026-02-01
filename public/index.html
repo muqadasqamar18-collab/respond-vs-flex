@@ -67,6 +67,8 @@
 
     </div>
 
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -81,6 +83,30 @@
         const countRespond = document.getElementById('count-respond');
 
         let selectedFiles = [];
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let classes = 'bg-white border-l-4 p-4 rounded shadow-lg flex items-center transition-all duration-300 transform translate-x-full opacity-0 pointer-events-auto min-w-[300px] mb-2';
+            classes += type === 'error' ? ' border-red-500 text-red-700' : ' border-green-500 text-green-700';
+
+            toast.className = classes;
+            toast.innerHTML = `
+                <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} text-xl mr-3"></i>
+                <p class="font-medium">${message}</p>
+            `;
+
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
 
         // Drag & Drop Handlers
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -201,6 +227,7 @@
 
                 const data = await response.json();
                 displayResults(data.results);
+                showToast('Classification complete!', 'success');
 
                 // Clear selection
                 selectedFiles = [];
@@ -208,7 +235,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
