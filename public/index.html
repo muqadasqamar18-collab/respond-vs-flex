@@ -15,6 +15,9 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+
     <div class="max-w-4xl mx-auto px-4 py-12">
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Proposal Classifier</h1>
@@ -179,6 +182,42 @@
             updatePendingList(nextFocusIndex);
         }
 
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const config = {
+                success: { bg: 'bg-green-600', icon: 'fa-check-circle' },
+                error:   { bg: 'bg-red-600',   icon: 'fa-exclamation-circle' }
+            };
+            const style = config[type] || config.success;
+
+            toast.className = `${style.bg} text-white px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0 flex items-center gap-3 pointer-events-auto min-w-[300px]`;
+
+            const icon = document.createElement('i');
+            icon.className = `fas ${style.icon} text-xl`;
+            toast.appendChild(icon);
+
+            const text = document.createElement('p');
+            text.className = 'font-medium';
+            text.textContent = message;
+            toast.appendChild(text);
+
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         classifyBtn.addEventListener('click', async () => {
             if (selectedFiles.length === 0) return;
 
@@ -201,6 +240,7 @@
 
                 const data = await response.json();
                 displayResults(data.results);
+                showToast('Classification complete!', 'success');
 
                 // Clear selection
                 selectedFiles = [];
@@ -208,7 +248,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
