@@ -9,3 +9,7 @@
 ## 2025-02-18 - Focus Management in Dynamic Lists
 **Learning:** When items are removed from a list and the DOM is rebuilt, keyboard focus is lost to the `body`, forcing users to re-navigate the entire page.
 **Action:** Implement programmatic focus restoration after list updates. Calculate the next logical focus target (e.g., same index or previous item) before deletion and explicitly focus it after the DOM updates.
+
+## 2025-02-18 - Non-blocking Feedback Patterns
+**Learning:** Native `alert()` dialogs block the main thread and provide poor accessibility. Custom toasts must be carefully engineered: the container needs `pointer-events-none` to allow clicking through to UI below, while toasts themselves need `pointer-events-auto`.
+**Action:** Replace `alert()` with a `showToast` system using `role="alert"` (error) or `role="status"` (success) and explicit pointer-event management.
