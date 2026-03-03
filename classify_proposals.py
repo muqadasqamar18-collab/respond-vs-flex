@@ -38,7 +38,6 @@ def extract_text(filepath):
              # For this script we return empty and let filename heuristics handle it.
              pass
     except Exception as e:
-        # print(f"Error reading {filepath}: {e}")
         pass
     return text
 
@@ -63,7 +62,6 @@ def classify_with_gemini(text):
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        # print(f"Gemini API Error: {e}")
         return None
 
 def classify_file(filepath):
