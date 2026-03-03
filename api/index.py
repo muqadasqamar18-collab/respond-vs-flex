@@ -57,4 +57,4 @@ def classify():
     return jsonify({"results": results})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't'])
