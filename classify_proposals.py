@@ -163,35 +163,23 @@ if __name__ == "__main__":
     print(f"\n{Palette.BOLD}Classifying Proposals...{Palette.RESET}\n")
 
     for f in args.files:
+        result = classify_file(f)
+
+        color = Palette.GREEN if "Flex" in result else Palette.CYAN
+        formatted_result = Palette.colorize(result, color)
+
+        if "Flex" in result:
+            flex_count += 1
+        elif "Respond" in result:
+            respond_count += 1
+
         if os.path.exists(f):
-            result = classify_file(f)
-
-            color = Palette.GREEN if "Flex" in result else Palette.CYAN
-            formatted_result = Palette.colorize(result, color)
-
-            if "Flex" in result:
-                flex_count += 1
-            elif "Respond" in result:
-                respond_count += 1
-
             print(f"📄 {f}: {formatted_result}")
         else:
             # Handle the missing files mentioned by user
-            # Simulate classification based on name only
-            result = classify_file(f)
-
-            color = Palette.GREEN if "Flex" in result else Palette.CYAN
-            formatted_result = Palette.colorize(result, color)
-            error_msg = Palette.colorize("(File not found)", Palette.RED)
-
             # We still count them as they were classified by name
-            if "Flex" in result:
-                flex_count += 1
-            elif "Respond" in result:
-                respond_count += 1
-
+            error_msg = Palette.colorize("(File not found)", Palette.RED)
             print(f"❌ {f} {error_msg}: {formatted_result}")
-
     print(f"\n{Palette.BOLD}Summary:{Palette.RESET}")
     print(f"  Flex:    {Palette.colorize(str(flex_count), Palette.GREEN)}")
     print(f"  Respond: {Palette.colorize(str(respond_count), Palette.CYAN)}")
