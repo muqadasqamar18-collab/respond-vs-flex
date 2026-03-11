@@ -42,14 +42,20 @@ def extract_text(filepath):
         pass
     return text
 
+_gemini_client_configured = False
+_gemini_model = None
+
 def classify_with_gemini(text):
+    global _gemini_client_configured, _gemini_model
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return None
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        if not _gemini_client_configured:
+            genai.configure(api_key=api_key)
+            _gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+            _gemini_client_configured = True
 
         prompt = (
             "You are an expert grant proposal classifier. "
@@ -60,7 +66,7 @@ def classify_with_gemini(text):
             "\n\nDocument Text:\n" + text[:10000] # Limit context window just in case
         )
 
-        response = model.generate_content(prompt)
+        response = _gemini_model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         # print(f"Gemini API Error: {e}")
