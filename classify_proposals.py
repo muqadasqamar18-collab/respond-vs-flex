@@ -113,7 +113,7 @@ def classify_file(filepath):
     if "request for proposal" in text: score_flex += 2
     if "project overview" in text and "project name*" in text: score_flex += 3 # Specific form style in Flex
     if "collaborate feature" in text: score_flex += 2 # Found in QuestionList (1).pdf
-    if "character limit" in text: score_flex += 2
+    if "characters maximum" in text: score_flex += 3
 
     # RESPOND Indicators
     if "application form" in text:
