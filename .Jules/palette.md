@@ -9,3 +9,7 @@
 ## 2025-02-18 - Focus Management in Dynamic Lists
 **Learning:** When items are removed from a list and the DOM is rebuilt, keyboard focus is lost to the `body`, forcing users to re-navigate the entire page.
 **Action:** Implement programmatic focus restoration after list updates. Calculate the next logical focus target (e.g., same index or previous item) before deletion and explicitly focus it after the DOM updates.
+
+## 2026-02-06 - Non-Blocking Overlay Interaction
+**Learning:** Fixed overlay containers (like toast wrappers) block mouse interactions with underlying elements even if they are transparent.
+**Action:** Apply `pointer-events-none` to the container div and `pointer-events-auto` to the child elements (toasts). This allows clicks to pass through empty space while keeping notifications interactive.
