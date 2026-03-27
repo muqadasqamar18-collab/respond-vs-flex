@@ -11,6 +11,9 @@ from classify_proposals import classify_file
 # Set the static folder to public
 app = Flask(__name__, static_folder='../public', static_url_path='')
 
+# Limit upload size to 16MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
