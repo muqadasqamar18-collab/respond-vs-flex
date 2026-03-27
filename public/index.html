@@ -201,6 +201,7 @@
 
                 const data = await response.json();
                 displayResults(data.results);
+                showToast('Classification complete!', 'success');
 
                 // Clear selection
                 selectedFiles = [];
@@ -208,7 +209,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
@@ -277,6 +278,50 @@
             resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Icon and Color based on type
+            const isSuccess = type === 'success';
+            const bgColor = isSuccess ? 'bg-green-600' : 'bg-red-600';
+            const icon = isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle';
+            const role = isSuccess ? 'status' : 'alert';
+            const ariaLive = isSuccess ? 'polite' : 'assertive';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-lg mb-3 flex items-center transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto min-w-[300px]`;
+            toast.setAttribute('role', role);
+            toast.setAttribute('aria-live', ariaLive);
+
+            // Securely set text content
+            const iconEl = document.createElement('i');
+            iconEl.className = `fas ${icon} mr-3 text-lg`;
+
+            const textEl = document.createElement('span');
+            textEl.className = 'font-medium';
+            textEl.textContent = message;
+
+            toast.appendChild(iconEl);
+            toast.appendChild(textEl);
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300); // Wait for transition
+            }, 3000);
+        }
     </script>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col items-end pointer-events-none"></div>
 </body>
 </html>
