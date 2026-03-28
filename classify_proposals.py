@@ -38,7 +38,6 @@ def extract_text(filepath):
              # For this script we return empty and let filename heuristics handle it.
              pass
     except Exception as e:
-        # print(f"Error reading {filepath}: {e}")
         pass
     return text
 
