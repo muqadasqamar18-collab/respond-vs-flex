@@ -1,5 +1,4 @@
 import os
-import re
 import argparse
 import google.generativeai as genai
 from pypdf import PdfReader
