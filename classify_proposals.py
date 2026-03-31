@@ -86,9 +86,6 @@ def classify_file(filepath):
 
     # --- Heuristic Rules ---
 
-    # strong_respond_keywords = ["template", "form", "checklist", "fill-in", "fillable", "application form"]
-    # strong_flex_keywords = ["rfp", "request for proposal", "guidelines", "question list", "questions", "narrative"]
-
     score_respond = 0
     score_flex = 0
 
