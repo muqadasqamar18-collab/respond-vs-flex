@@ -15,6 +15,9 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <div class="max-w-4xl mx-auto px-4 py-12">
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Proposal Classifier</h1>
@@ -199,6 +202,10 @@
                     body: formData
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 displayResults(data.results);
 
@@ -208,7 +215,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred during classification.');
+                showToast('An error occurred during classification. Please try again.', 'error');
             } finally {
                 // Reset Button
                 classifyBtn.disabled = false;
@@ -275,6 +282,78 @@
 
             // Scroll to results
             resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Base classes
+            let classes = 'w-80 md:w-96 bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 transform transition-all duration-300 translate-y-2 opacity-0';
+
+            // Icon and colors based on type
+            let iconHtml = '';
+            let borderColor = '';
+
+            if (type === 'success') {
+                iconHtml = '<i class="fas fa-check-circle text-green-400 text-xl"></i>';
+                borderColor = 'border-l-4 border-green-500';
+            } else if (type === 'error') {
+                iconHtml = '<i class="fas fa-exclamation-circle text-red-400 text-xl"></i>';
+                borderColor = 'border-l-4 border-red-500';
+            } else {
+                iconHtml = '<i class="fas fa-info-circle text-blue-400 text-xl"></i>';
+                borderColor = 'border-l-4 border-blue-500';
+            }
+
+            toast.className = `${classes} ${borderColor}`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+            // Use textContent for safety
+            toast.innerHTML = `
+                <div class="p-4 w-full">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            ${iconHtml}
+                        </div>
+                        <div class="ml-3 w-0 flex-1 pt-0.5">
+                            <p class="text-sm font-medium text-gray-900 toast-message"></p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex">
+                            <button class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 toast-close-btn">
+                                <span class="sr-only">Close</span>
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            toast.querySelector('.toast-message').textContent = message;
+
+            const closeBtn = toast.querySelector('.toast-close-btn');
+            closeBtn.onclick = () => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Auto remove
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.classList.add('translate-y-2', 'opacity-0');
+                    toast.addEventListener('transitionend', () => {
+                        if (document.body.contains(toast)) toast.remove();
+                    });
+                }
+            }, 5000);
         }
 
     </script>
